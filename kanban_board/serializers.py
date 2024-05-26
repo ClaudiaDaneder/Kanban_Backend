@@ -3,16 +3,6 @@ from django.contrib.auth.models import User
 
 from .models import Task, Board
 
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = "__all__"
-
-class BoardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Board
-        fields = "__all__"
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -28,3 +18,23 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class TaskListSerializer(serializers.ModelSerializer):
+    project_lead = UserSerializer()
+    created_by = UserSerializer()
+    class Meta:
+        model = Task
+        fields = "__all__"
+
+class TaskCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = '__all__'
+        extra_kwargs = {'created_by': {'read_only': True}}
+
+
+class BoardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = "__all__"
+        extra_kwargs = {'owner': {'read_only': True}}
