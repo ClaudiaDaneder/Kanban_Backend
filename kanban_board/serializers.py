@@ -32,7 +32,10 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {'created_by': {'read_only': True}}
 
-
+class TaskUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ['title', 'description', 'project_lead', 'board', 'priority', 'deadline', 'status']
 class BoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board

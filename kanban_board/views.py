@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 
-from kanban_board.serializers import BoardSerializer, TaskListSerializer, UserSerializer, TaskCreateSerializer
+from kanban_board.serializers import BoardSerializer, TaskListSerializer, UserSerializer, TaskCreateSerializer, TaskUpdateSerializer
 from .models import Board, Task
 
 class BoardListView(generics.ListAPIView):
@@ -32,6 +32,13 @@ class BoardCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    serializer_class = BoardSerializer
+    queryset = Board.objects.all()
 
 class TaskListView(generics.ListAPIView):
 
@@ -44,13 +51,23 @@ class TaskListView(generics.ListAPIView):
         board_id = self.kwargs['board_id']
         return Task.objects.filter(board_id=board_id)
 
+class UserTaskListView(generics.ListAPIView):
 
-class TaskDetailView(generics.RetrieveAPIView):
-
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     serializer_class = TaskListSerializer
+
+    def get_queryset(self):
+        return Task.objects.filter(project_lead=self.request.user)
+
+class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    serializer_class = TaskUpdateSerializer
+
     queryset = Task.objects.all()
 
 
@@ -65,15 +82,11 @@ class TaskCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-class TaskDeleteView(generics.DestroyAPIView):
-
-    serializer_class = TaskCreateSerializer
-    queryset = Task.objects.all()
-
-    def get_queryset(self):
-        return Task.objects.filter(created_by=self.request.user)
-
 class UserListView(generics.ListAPIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
@@ -91,6 +104,14 @@ class LoginView(ObtainAuthToken):
             'email': user.email
         })
 
+class LogoutView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
+
 
 class RegisterView(APIView):
     def post(self, request):
@@ -105,3 +126,12 @@ class RegisterView(APIView):
                 'token': token.key
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileView(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
